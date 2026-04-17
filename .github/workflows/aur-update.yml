@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: |
           pacman -S --noconfirm --needed \
-            git devtools pacman-contrib
+            git devtools pacman-contrib nvchecker
 
       - name: Clone AUR package
         run: |
