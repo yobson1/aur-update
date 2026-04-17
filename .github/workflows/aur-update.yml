@@ -1,0 +1,94 @@
+name: AUR Package Updater
+
+on:
+  schedule:
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set matrix from pkgs.txt
+        id: set-matrix
+        run: |
+          pkgs=$(grep -v '^\s*#' pkgs.txt | grep -v '^\s*$' | jq -Rsc '[split("\n")[] | select(length > 0)]')
+          echo "matrix={\"pkg\":${pkgs}}" >> "$GITHUB_OUTPUT"
+
+  update:
+    needs: generate-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+      fail-fast: false
+    container:
+      image: archlinux
+
+    steps:
+      - name: Upgrade Arch Linux
+        uses: arch4edu/cactus/actions/upgrade-archlinux@main
+
+      - name: Install dependencies
+        run: |
+          pacman -S --noconfirm --needed \
+            git devtools pacman-contrib
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions@github.com"
+
+      - name: Clone AUR package
+        run: |
+          git clone ssh://aur@aur.archlinux.org/${{ matrix.pkg }}.git
+
+      - name: Check for version updates and upgrade package
+        id: upgrade
+        run: |
+          set -euo pipefail
+
+          cd "${{ matrix.pkg }}"
+
+          if [ ! -f "PKGBUILD" ]; then
+            echo "::error::No PKGBUILD found, skipping."
+            exit 1
+          fi
+
+          if [ ! -f ".nvchecker.toml" ]; then
+            echo "::error::No .nvchecker.toml found, skipping."
+            exit 1
+          fi
+
+          if pkgctl version check 2>&1; then
+            echo "already_up_to_date=true" >> "$GITHUB_OUTPUT"
+            echo "${{ matrix.pkg }} is already up-to-date."
+            exit 0
+          fi
+
+          echo "${{ matrix.pkg }} has a new upstream version, upgrading."
+          pkgctl version upgrade
+
+          new_ver="$(grep -m1 '^pkgver' PKGBUILD | cut -d= -f2)"
+          new_rel="$(grep -m1 '^pkgrel' PKGBUILD | cut -d= -f2)"
+
+          echo "new_ver=${new_ver}-${new_rel}" >> "$GITHUB_OUTPUT"
+          echo "already_up_to_date=false" >> "$GITHUB_OUTPUT"
+          echo "Upgraded ${{ matrix.pkg }} to ${new_ver}-${new_rel}"
+
+      - name: Publish to AUR
+        if: steps.upgrade.outputs.already_up_to_date == 'false'
+        uses: KSXGitHub/github-actions-deploy-aur@3b403c740ae5e446b747b45451ec68665428dab1
+        with:
+          pkgname: ${{ matrix.pkg }}
+          pkgbuild: ${{ matrix.pkg }}/PKGBUILD
+          commit_username: GitHub Actions
+          commit_email: github-actions@github.com
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "${{ matrix.pkg }} v${{ steps.upgrade.outputs.new_ver }}"
+          updpkgsums: false # already done by pkgctl version upgrade
+          test: true
