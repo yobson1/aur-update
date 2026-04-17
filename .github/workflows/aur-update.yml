@@ -40,7 +40,7 @@ jobs:
 
       - name: Clone AUR package
         run: |
-          git clone ssh://aur@aur.archlinux.org/${{ matrix.pkg }}.git
+          git clone https://aur.archlinux.org/${{ matrix.pkg }}.git
 
       - name: Check for version updates and upgrade package
         id: upgrade
