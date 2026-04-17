@@ -38,11 +38,6 @@ jobs:
           pacman -S --noconfirm --needed \
             git devtools pacman-contrib
 
-      - name: Configure Git
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "github-actions@github.com"
-
       - name: Clone AUR package
         run: |
           git clone ssh://aur@aur.archlinux.org/${{ matrix.pkg }}.git
