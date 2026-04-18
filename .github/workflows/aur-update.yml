@@ -66,7 +66,7 @@ jobs:
           fi
 
           echo "${{ matrix.pkg }} has a new upstream version, upgrading."
-          pkgctl version upgrade
+          pkgctl version upgrade --no-update-checksums
 
           new_ver="$(grep -m1 '^pkgver' PKGBUILD | cut -d= -f2)"
           new_rel="$(grep -m1 '^pkgrel' PKGBUILD | cut -d= -f2)"
@@ -85,5 +85,5 @@ jobs:
           commit_email: github-actions@github.com
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: "${{ matrix.pkg }} v${{ steps.upgrade.outputs.new_ver }}"
-          updpkgsums: false # already done by pkgctl version upgrade
+          updpkgsums: true
           test: true
