@@ -81,6 +81,12 @@ jobs:
             exit 1
           fi
 
+          # some packages may have a custom update-sources.sh script
+          # (stremio-linux-shell for example)
+          if [ -f update-sources.sh ]; then
+            ./update-sources.sh
+          fi
+
           echo "new_ver=${new_ver}-${new_rel}" >> "$GITHUB_OUTPUT"
           echo "already_up_to_date=false" >> "$GITHUB_OUTPUT"
           echo "Upgraded ${{ matrix.pkg }} to ${new_ver}-${new_rel}"
