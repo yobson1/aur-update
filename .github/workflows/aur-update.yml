@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: |
           pacman -S --noconfirm --needed \
-            git devtools pacman-contrib nvchecker
+            git devtools pacman-contrib nvchecker strace
 
       - name: Clone AUR package
         run: |
@@ -66,10 +66,18 @@ jobs:
           fi
 
           echo "${{ matrix.pkg }} has a new upstream version, upgrading."
-          pkgctl version upgrade --no-update-checksums
+
+          # This exits with 1 even if it worked
+          pkgctl version upgrade --no-update-checksums 2>&1 || true
 
           new_ver="$(grep -m1 '^pkgver' PKGBUILD | cut -d= -f2)"
           new_rel="$(grep -m1 '^pkgrel' PKGBUILD | cut -d= -f2)"
+
+          # Verify the version actually changed before declaring success
+          if [ -z "$new_ver" ]; then
+            echo "::error::Failed to extract new version from PKGBUILD"
+            exit 1
+          fi
 
           echo "new_ver=${new_ver}-${new_rel}" >> "$GITHUB_OUTPUT"
           echo "already_up_to_date=false" >> "$GITHUB_OUTPUT"
@@ -87,3 +95,4 @@ jobs:
           commit_message: "${{ matrix.pkg }} v${{ steps.upgrade.outputs.new_ver }}"
           updpkgsums: true
           test: true
+          test_flags: --clean --cleanbuild --syncdeps
