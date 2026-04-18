@@ -67,6 +67,8 @@ jobs:
 
           echo "${{ matrix.pkg }} has a new upstream version, upgrading."
 
+          old_ver="$(grep -m1 '^pkgver' PKGBUILD | cut -d= -f2)"
+
           # This exits with 1 even if it worked
           pkgctl version upgrade --no-update-checksums 2>&1 || true
 
@@ -74,8 +76,8 @@ jobs:
           new_rel="$(grep -m1 '^pkgrel' PKGBUILD | cut -d= -f2)"
 
           # Verify the version actually changed before declaring success
-          if [ -z "$new_ver" ]; then
-            echo "::error::Failed to extract new version from PKGBUILD"
+          if [ "$old_ver" == "$new_ver" ]; then
+            echo "::error::Failed to version upgrade"
             exit 1
           fi
 
