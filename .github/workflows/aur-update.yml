@@ -95,4 +95,4 @@ jobs:
           commit_message: "${{ matrix.pkg }} v${{ steps.upgrade.outputs.new_ver }}"
           updpkgsums: true
           test: true
-          test_flags: --clean --cleanbuild --syncdeps
+          test_flags: --clean --cleanbuild --syncdeps --needed --noconfirm
