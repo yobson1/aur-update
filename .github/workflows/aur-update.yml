@@ -59,14 +59,6 @@ jobs:
             exit 1
           fi
 
-          if pkgctl version check 2>&1; then
-            echo "already_up_to_date=true" >> "$GITHUB_OUTPUT"
-            echo "${{ matrix.pkg }} is already up-to-date."
-            exit 0
-          fi
-
-          echo "${{ matrix.pkg }} has a new upstream version, upgrading."
-
           old_ver="$(grep -m1 '^pkgver' PKGBUILD | cut -d= -f2)"
 
           # This exits with 1 even if it worked
@@ -77,8 +69,9 @@ jobs:
 
           # Verify the version actually changed before declaring success
           if [ "$old_ver" == "$new_ver" ]; then
-            echo "::error::Failed to version upgrade"
-            exit 1
+            echo "already_up_to_date=true" >> "$GITHUB_OUTPUT"
+            echo "${{ matrix.pkg }} is already up-to-date."
+            exit 0
           fi
 
           # some packages may have a custom update-sources.sh script
