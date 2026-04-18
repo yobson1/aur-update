@@ -1,0 +1,2 @@
+# aur-update
+Designed to automatically keep my AUR packages up-to-date via a GitHub actions workflow that runs once per day. All works with a single [workflow](./.github/workflows/aur-update.yml) using pkgctl/nvchecker to update the PKGBUILD and [KSXGitHub/github-actions-deploy-aur](https://github.com/KSXGitHub/github-actions-deploy-aur) to deploy to the AUR. The packages this touches can be seen in [pkgs.txt](pkgs.txt).
